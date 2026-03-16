@@ -142,31 +142,7 @@
             <input type="radio" name="storage-mode" value="local" id="mode-local" checked />
             <span class="radio-label">
               <span class="radio-title">📂 Local folder</span>
-              <span class="radio-desc">Save files to a folder on your device (File System Access API)</span>
-            </span>
-          </label>
-
-          <label class="radio-option">
-            <input type="radio" name="storage-mode" value="onedrive" id="mode-onedrive" />
-            <span class="radio-label">
-              <span class="radio-title">☁️ OneDrive</span>
-              <span class="radio-desc">Sync to Microsoft OneDrive via Graph API</span>
-            </span>
-          </label>
-
-          <label class="radio-option">
-            <input type="radio" name="storage-mode" value="gdrive" id="mode-gdrive" />
-            <span class="radio-label">
-              <span class="radio-title">🟢 Google Drive</span>
-              <span class="radio-desc">Sync to Google Drive via REST API</span>
-            </span>
-          </label>
-
-          <label class="radio-option">
-            <input type="radio" name="storage-mode" value="dropbox" id="mode-dropbox" />
-            <span class="radio-label">
-              <span class="radio-title">📦 Dropbox</span>
-              <span class="radio-desc">Sync to Dropbox via API v2</span>
+              <span class="radio-desc">Save files to a folder on your device</span>
             </span>
           </label>
         </section>
@@ -180,19 +156,6 @@
           <button class="btn btn-primary" id="choose-directory">Choose folder…</button>
         </section>
 
-        <!-- Cloud credentials (placeholder) -->
-        <section class="settings-section hidden" id="cloud-section">
-          <h3>Cloud settings</h3>
-          <div class="cloud-stub">
-            <p id="cloud-stub-text">Connect your account to enable sync.</p>
-            <button class="btn btn-primary" id="cloud-connect-btn">Connect account</button>
-            <div id="cloud-connected-info" class="hidden">
-              <p>✅ Connected as <span id="cloud-user-email">—</span></p>
-              <button class="btn btn-outline" id="cloud-disconnect-btn">Disconnect</button>
-            </div>
-          </div>
-        </section>
-
         <!-- Auto-sync -->
         <section class="settings-section">
           <h3>Auto-sync</h3>
@@ -201,27 +164,6 @@
             <input type="checkbox" id="auto-sync" class="toggle-input" />
             <span class="toggle-slider"></span>
           </label>
-        </section>
-
-        <!-- Folder structure -->
-        <section class="settings-section">
-          <h3>Folder structure</h3>
-          <label class="toggle-option">
-            <span class="toggle-label">Organize by type (links/, notes/, images/…)</span>
-            <input type="checkbox" id="organize-by-type" class="toggle-input" checked />
-            <span class="toggle-slider"></span>
-          </label>
-          <label class="toggle-option">
-            <span class="toggle-label">Add date prefix to filenames</span>
-            <input type="checkbox" id="date-prefix" class="toggle-input" checked />
-            <span class="toggle-slider"></span>
-          </label>
-        </section>
-
-        <!-- Danger zone -->
-        <section class="settings-section danger-section">
-          <h3>Data</h3>
-          <button class="btn btn-danger" id="clear-inbox">Clear all inbox items</button>
         </section>
       </div>
     </div>
@@ -232,8 +174,8 @@
     <div class="modal-backdrop"></div>
     <div class="modal-content modal-content--full">
       <div class="modal-header">
-        <button class="icon-btn modal-close" id="item-modal-close">← Back</button>
-        <h2 id="item-modal-title">Item</h2>
+        <button class="icon-btn modal-close" id="item-modal-close">✕</button>
+        <h2 id="item-modal-title"></h2>
         <button class="icon-btn" id="item-modal-delete" title="Delete">🗑️</button>
       </div>
       <div class="modal-body" id="item-modal-body"></div>
