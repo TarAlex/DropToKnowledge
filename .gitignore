@@ -1,0 +1,6 @@
+.idea/
+*.log
+node_modules/
+.DS_Store
+android-twa/app-debug.apk
+android-twa/app-release.aab
