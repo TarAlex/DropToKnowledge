@@ -1,8 +1,8 @@
 /**
- * ui.js — DOM rendering helpers for 1folder
+ * ui.js — DOM rendering helpers for DropToKnowledge
  */
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+// --- Toast --------------------------------------------------------------------
 
 let _toastTimer = null;
 const toastEl = () => document.getElementById('toast');
@@ -22,7 +22,7 @@ export function showToast(message, type = 'info', duration = 3000) {
   }, duration);
 }
 
-// ─── Loading / Spinner ────────────────────────────────────────────────────────
+// --- Loading / Spinner --------------------------------------------------------
 
 export function setLoading(selector, loading) {
   const el = document.querySelector(selector);
@@ -31,7 +31,7 @@ export function setLoading(selector, loading) {
   else         el.removeAttribute('disabled');
 }
 
-// ─── Counts ───────────────────────────────────────────────────────────────────
+// --- Counts -------------------------------------------------------------------
 
 export function updateCounts(counts) {
   for (const [type, count] of Object.entries(counts)) {
@@ -40,14 +40,14 @@ export function updateCounts(counts) {
   }
 }
 
-// ─── Item list rendering ──────────────────────────────────────────────────────
+// --- Item list rendering ------------------------------------------------------
 
 const TYPE_META = {
-  url:    { icon: '🔗', label: 'Link',     color: '#4fc3f7' },
-  note:   { icon: '📝', label: 'Note',     color: '#a5d6a7' },
-  images: { icon: '🖼️', label: 'Image',    color: '#f48fb1' },
-  docs:   { icon: '📄', label: 'Document', color: '#ffcc80' },
-  voice:  { icon: '🎵', label: 'Audio',    color: '#ce93d8' }
+  url:    { icon: '\u{1F517}', label: 'Link',     color: '#4fc3f7' },
+  note:   { icon: '\u{1F4DD}', label: 'Note',     color: '#a5d6a7' },
+  images: { icon: '\u{1F5BC}\uFE0F', label: 'Image',    color: '#f48fb1' },
+  docs:   { icon: '\u{1F4C4}', label: 'Document', color: '#ffcc80' },
+  voice:  { icon: '\u{1F3B5}', label: 'Audio',    color: '#ce93d8' }
 };
 
 export function renderItems(entries, container, onItemClick) {
@@ -76,7 +76,7 @@ export function renderItems(entries, container, onItemClick) {
 }
 
 function buildItemCard(entry, onItemClick) {
-  const meta = TYPE_META[entry.type] || { icon: '📎', label: entry.type, color: '#888' };
+  const meta = TYPE_META[entry.type] || { icon: '\u{1F4CE}', label: entry.type, color: '#888' };
   const card = document.createElement('article');
   card.className  = 'item-card';
   card.dataset.id = entry.id;
@@ -91,22 +91,22 @@ function buildItemCard(entry, onItemClick) {
       <div class="item-card-meta">
         <span class="item-type-badge" style="color:${meta.color}">${meta.label}</span>
         <span class="item-card-time">${formatTime(entry.createdAt)}</span>
-        ${entry.synced ? '<span class="synced-badge" title="Synced">✓</span>' : ''}
+        ${entry.synced ? '<span class="synced-badge" title="Synced">\u2713</span>' : ''}
       </div>
       ${entry.type === 'url' ? `<div class="item-card-url">${escapeHtml(entry.url || entry.text || '')}</div>` : ''}
       ${entry.type === 'note' ? `<div class="item-card-snippet">${escapeHtml(truncate(entry.text || '', 120))}</div>` : ''}
     </div>
-    <button class="item-card-chevron" aria-label="Open">›</button>
+    <button class="item-card-chevron" aria-label="Open">\u203A</button>
   `;
 
   card.addEventListener('click', () => onItemClick(entry));
   return card;
 }
 
-// ─── Item detail modal ────────────────────────────────────────────────────────
+// --- Item detail modal --------------------------------------------------------
 
 export function renderItemDetail(entry, container) {
-  const meta = TYPE_META[entry.type] || { icon: '📎', label: entry.type, color: '#888' };
+  const meta = TYPE_META[entry.type] || { icon: '\u{1F4CE}', label: entry.type, color: '#888' };
   container.innerHTML = '';
 
   const header = document.createElement('div');
@@ -167,7 +167,7 @@ export function renderItemDetail(entry, container) {
     fileSection.className = 'item-detail-section';
     fileSection.innerHTML = `
       <div class="item-detail-file">
-        <span class="item-detail-file-icon">📎</span>
+        <span class="item-detail-file-icon">\u{1F4CE}</span>
         <div>
           <div class="item-detail-filename">${escapeHtml(entry.filename)}</div>
           <div class="item-detail-mime">${escapeHtml(entry.mime || 'unknown type')}</div>
@@ -181,7 +181,7 @@ export function renderItemDetail(entry, container) {
       dlBtn.href     = url;
       dlBtn.download = entry.filename;
       dlBtn.className = 'btn btn-primary';
-      dlBtn.textContent = '⬇ Download';
+      dlBtn.textContent = '\u2B07 Download';
       fileSection.appendChild(dlBtn);
     }
     container.appendChild(fileSection);
@@ -198,7 +198,7 @@ export function renderItemDetail(entry, container) {
   });
 }
 
-// ─── Utility ──────────────────────────────────────────────────────────────────
+// --- Utility ------------------------------------------------------------------
 
 function groupByDate(entries) {
   const groups = {};
@@ -225,7 +225,7 @@ function formatDate(iso) {
 }
 
 function truncate(str, n) {
-  return str.length > n ? str.slice(0, n) + '…' : str;
+  return str.length > n ? str.slice(0, n) + '\u2026' : str;
 }
 
 function escapeHtml(str) {

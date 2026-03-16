@@ -1,8 +1,8 @@
 {
-  "packageId": "com.onefolder.app",
-  "host": "YOUR_DOMAIN",
-  "name": "1folder",
-  "launcherName": "1folder",
+  "packageId": "com.droptoknowledge.app",
+  "host": "taralex.github.io",
+  "name": "DropToKnowledge",
+  "launcherName": "DropToKnowledge",
   "display": "standalone",
   "orientation": "portrait",
   "themeColor": "#1a1a2e",
@@ -12,28 +12,28 @@
   "navigationDividerColorDark": "#1a1a2e",
   "backgroundColor": "#1a1a2e",
   "enableNotifications": true,
-  "startUrl": "/?utm_source=twa",
-  "iconUrl": "https://YOUR_DOMAIN/icons/icon-512.png",
-  "maskableIconUrl": "https://YOUR_DOMAIN/icons/icon-512.png",
-  "monochromeIconUrl": "https://YOUR_DOMAIN/icons/icon-512.png",
+  "startUrl": "/DropToKnowledge/?utm_source=twa",
+  "iconUrl": "https://taralex.github.io/DropToKnowledge/icons/icon-512.png",
+  "maskableIconUrl": "https://taralex.github.io/DropToKnowledge/icons/icon-512.png",
+  "monochromeIconUrl": "https://taralex.github.io/DropToKnowledge/icons/icon-512.png",
   "appVersion": "1",
   "appVersionName": "1.0.0",
   "shortcutItems": [
     {
       "name": "All Items",
       "shortName": "Inbox",
-      "url": "/?filter=all",
-      "chosenIconUrl": "https://YOUR_DOMAIN/icons/icon-96.png"
+      "url": "/DropToKnowledge/?filter=all",
+      "chosenIconUrl": "https://taralex.github.io/DropToKnowledge/icons/icon-96.png"
     },
     {
       "name": "Links",
       "shortName": "Links",
-      "url": "/?filter=url",
-      "chosenIconUrl": "https://YOUR_DOMAIN/icons/icon-96.png"
+      "url": "/DropToKnowledge/?filter=url",
+      "chosenIconUrl": "https://taralex.github.io/DropToKnowledge/icons/icon-96.png"
     }
   ],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://YOUR_DOMAIN/manifest.webmanifest",
+  "webManifestUrl": "https://taralex.github.io/DropToKnowledge/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {
     "locationDelegation": {
@@ -49,11 +49,11 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://YOUR_DOMAIN/",
+  "fullScopeUrl": "https://taralex.github.io/DropToKnowledge/",
   "minSdkVersion": 19,
   "signingKey": {
     "path": "./android.keystore",
-    "alias": "1folder"
+    "alias": "droptoknowledge"
   },
   "signingKeyFullPath": "./android.keystore"
 }

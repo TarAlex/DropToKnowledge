@@ -1,9 +1,9 @@
 /* ============================================================
-   1folder — CSS Design System
+   DropToKnowledge — CSS Design System
    Dark theme, mobile-first, Android TWA optimized
    ============================================================ */
 
-/* ─── CSS Variables ─────────────────────────────────────────── */
+/* --- CSS Variables ----------------------------------------- */
 :root {
   /* Colors */
   --bg-base:        #0f0f1a;
@@ -63,7 +63,7 @@
   --safe-right:  env(safe-area-inset-right, 0px);
 }
 
-/* ─── Reset ──────────────────────────────────────────────────── */
+/* --- Reset ------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
@@ -90,7 +90,7 @@ a:hover { text-decoration: underline; }
 button { cursor: pointer; font-family: inherit; border: none; background: transparent; color: inherit; }
 input, select, textarea { font-family: inherit; }
 
-/* ─── App Layout ─────────────────────────────────────────────── */
+/* --- App Layout -------------------------------------------- */
 #app {
   display: flex;
   height: 100dvh;
@@ -98,7 +98,7 @@ input, select, textarea { font-family: inherit; }
   position: relative;
 }
 
-/* ─── Sidebar ────────────────────────────────────────────────── */
+/* --- Sidebar ----------------------------------------------- */
 .sidebar {
   width: var(--sidebar-w);
   background: var(--bg-surface);
@@ -201,7 +201,7 @@ input, select, textarea { font-family: inherit; }
 }
 .nav-item.active .nav-count { background: var(--accent-dim); color: var(--accent); }
 
-/* ─── Main wrapper ───────────────────────────────────────────── */
+/* --- Main wrapper ------------------------------------------ */
 .main-wrapper {
   flex: 1;
   display: flex;
@@ -210,7 +210,7 @@ input, select, textarea { font-family: inherit; }
   min-width: 0;
 }
 
-/* ─── Topbar ─────────────────────────────────────────────────── */
+/* --- Topbar ------------------------------------------------ */
 .topbar {
   display: flex;
   align-items: center;
@@ -239,7 +239,7 @@ input, select, textarea { font-family: inherit; }
   #sidebar-toggle { display: none; }
 }
 
-/* ─── Icon button ────────────────────────────────────────────── */
+/* --- Icon button ------------------------------------------- */
 .icon-btn {
   width: 40px;
   height: 40px;
@@ -254,7 +254,7 @@ input, select, textarea { font-family: inherit; }
 }
 .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
-/* ─── Search bar ─────────────────────────────────────────────── */
+/* --- Search bar -------------------------------------------- */
 .search-bar {
   display: flex;
   align-items: center;
@@ -277,7 +277,7 @@ input, select, textarea { font-family: inherit; }
 .search-bar input:focus { border-color: var(--accent); }
 .search-bar input::placeholder { color: var(--text-muted); }
 
-/* ─── Sort bar ───────────────────────────────────────────────── */
+/* --- Sort bar ---------------------------------------------- */
 .sort-bar {
   display: flex;
   gap: var(--sp-sm);
@@ -303,7 +303,7 @@ input, select, textarea { font-family: inherit; }
 .sort-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .sort-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-/* ─── Content area ───────────────────────────────────────────── */
+/* --- Content area ------------------------------------------ */
 .content {
   flex: 1;
   overflow-y: auto;
@@ -313,7 +313,7 @@ input, select, textarea { font-family: inherit; }
   scrollbar-color: var(--border) transparent;
 }
 
-/* ─── Empty state ────────────────────────────────────────────── */
+/* --- Empty state ------------------------------------------- */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -329,7 +329,7 @@ input, select, textarea { font-family: inherit; }
 .empty-state h2 { font-size: 1.2rem; color: var(--text-secondary); font-weight: 600; }
 .empty-state p { font-size: 0.9rem; line-height: 1.6; max-width: 280px; }
 
-/* ─── Item groups ────────────────────────────────────────────── */
+/* --- Item groups ------------------------------------------- */
 .item-group { margin-bottom: var(--sp-lg); }
 
 .item-group-header {
@@ -341,7 +341,7 @@ input, select, textarea { font-family: inherit; }
   padding: var(--sp-xs) 0 var(--sp-sm);
 }
 
-/* ─── Item card ──────────────────────────────────────────────── */
+/* --- Item card --------------------------------------------- */
 .item-card {
   display: flex;
   align-items: flex-start;
@@ -423,7 +423,7 @@ input, select, textarea { font-family: inherit; }
   opacity: 0.6;
 }
 
-/* ─── FAB ────────────────────────────────────────────────────── */
+/* --- FAB --------------------------------------------------- */
 .fab {
   position: fixed;
   bottom: calc(var(--sp-lg) + var(--safe-bottom));
@@ -446,7 +446,7 @@ input, select, textarea { font-family: inherit; }
 .fab:hover  { background: var(--accent-hover); transform: scale(1.05); }
 .fab:active { transform: scale(0.96); }
 
-/* ─── Buttons ────────────────────────────────────────────────── */
+/* --- Buttons ----------------------------------------------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -472,7 +472,7 @@ input, select, textarea { font-family: inherit; }
 
 .btn[disabled] { opacity: 0.5; pointer-events: none; }
 
-/* ─── Modal ──────────────────────────────────────────────────── */
+/* --- Modal ------------------------------------------------- */
 .modal {
   position: fixed;
   inset: 0;
@@ -533,7 +533,7 @@ input, select, textarea { font-family: inherit; }
   scrollbar-color: var(--border) transparent;
 }
 
-/* ─── Settings sections ──────────────────────────────────────── */
+/* --- Settings sections ------------------------------------- */
 .settings-section {
   margin-bottom: var(--sp-lg);
 }
@@ -624,7 +624,7 @@ input, select, textarea { font-family: inherit; }
 
 .danger-section .btn { margin-top: var(--sp-sm); }
 
-/* ─── Item detail ────────────────────────────────────────────── */
+/* --- Item detail ------------------------------------------- */
 .item-detail-header {
   display: flex;
   align-items: center;
@@ -698,7 +698,7 @@ input, select, textarea { font-family: inherit; }
 .item-detail-filename { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); word-break: break-all; }
 .item-detail-mime { font-size: 0.75rem; color: var(--text-muted); }
 
-/* ─── Toast ──────────────────────────────────────────────────── */
+/* --- Toast ------------------------------------------------- */
 .toast {
   position: fixed;
   bottom: calc(var(--sp-xl) + 56px + var(--safe-bottom));
@@ -726,7 +726,7 @@ input, select, textarea { font-family: inherit; }
 .toast--warning { border-color: var(--warning);  color: var(--warning); }
 .toast--info    { border-color: var(--info);     color: var(--info); }
 
-/* ─── Utility ────────────────────────────────────────────────── */
+/* --- Utility ----------------------------------------------- */
 .hidden { display: none !important; }
 
 /* Scrollbar (Webkit) */

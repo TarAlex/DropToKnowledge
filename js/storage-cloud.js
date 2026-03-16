@@ -1,5 +1,5 @@
 /**
- * storage-cloud.js — Cloud storage adapters for 1folder
+ * storage-cloud.js — Cloud storage adapters for DropToKnowledge
  * Supports OneDrive (MS Graph), Google Drive REST API, Dropbox API v2
  *
  * Each adapter exposes: connect(), disconnect(), isConnected(),
@@ -10,7 +10,7 @@
 
 import { getSetting, setSetting, markSynced } from './db.js';
 
-// ─── Config — replace before production ──────────────────────────────────────
+// --- Config — replace before production --------------------------------------
 const CONFIG = {
   onedrive: {
     clientId:    'YOUR_ONEDRIVE_CLIENT_ID',
@@ -28,7 +28,7 @@ const CONFIG = {
   }
 };
 
-// ─── OneDrive (Microsoft Graph) ───────────────────────────────────────────────
+// --- OneDrive (Microsoft Graph) -----------------------------------------------
 
 export const OneDrive = {
   name: 'OneDrive',
@@ -75,7 +75,7 @@ export const OneDrive = {
     const { organizeByType = true, datePrefix = true } = opts;
     const syncedIds = [];
     const errors    = [];
-    const baseFolder = '1folder';
+    const baseFolder = 'DropToKnowledge';
 
     // Ensure base folder exists
     await ensureOneDriveFolder(token, baseFolder);
@@ -144,7 +144,7 @@ async function ensureOneDriveFolder(token, folderPath) {
   }
 }
 
-// ─── Google Drive ─────────────────────────────────────────────────────────────
+// --- Google Drive --------------------------------------------------------------
 
 export const GoogleDrive = {
   name: 'Google Drive',
@@ -188,7 +188,7 @@ export const GoogleDrive = {
     const { organizeByType = true } = opts;
     const syncedIds = [];
     const errors    = [];
-    const rootFolderId = await ensureGDriveFolder(token, '1folder', 'root');
+    const rootFolderId = await ensureGDriveFolder(token, 'DropToKnowledge', 'root');
 
     for (const entry of entries) {
       try {
@@ -249,7 +249,7 @@ async function ensureGDriveFolder(token, name, parentId) {
   return folder.id;
 }
 
-// ─── Dropbox ──────────────────────────────────────────────────────────────────
+// --- Dropbox ------------------------------------------------------------------
 
 export const Dropbox = {
   name: 'Dropbox',
@@ -305,7 +305,7 @@ export const Dropbox = {
     for (const entry of entries) {
       try {
         const subfolder = organizeByType ? `/${typeToFolder(entry.type)}` : '';
-        const path      = `/1folder${subfolder}/${entry.filename}`;
+        const path      = `/DropToKnowledge${subfolder}/${entry.filename}`;
         const blob      = await entryToBlob(entry);
         const content   = await blob.arrayBuffer();
 
@@ -335,7 +335,7 @@ export const Dropbox = {
   }
 };
 
-// ─── OAuth popup helper ───────────────────────────────────────────────────────
+// --- OAuth popup helper -------------------------------------------------------
 
 function openOAuthPopup(url, provider) {
   return new Promise((resolve, reject) => {
@@ -379,7 +379,7 @@ function openOAuthPopup(url, provider) {
   });
 }
 
-// ─── Shared utilities ─────────────────────────────────────────────────────────
+// --- Shared utilities ---------------------------------------------------------
 
 function typeToFolder(type) {
   const map = { url: 'links', note: 'notes', images: 'images', docs: 'documents', voice: 'audio' };

@@ -1,9 +1,9 @@
 /**
- * db.js — IndexedDB abstraction for 1folder
+ * db.js — IndexedDB abstraction for DropToKnowledge
  * Shared by app.js, storage modules etc.
  */
 
-const DB_NAME    = '1folder-db';
+const DB_NAME    = 'droptoknowledge-db';
 const DB_VERSION = 2;
 const STORE      = 'entries';
 const SETTINGS   = 'settings';
@@ -45,7 +45,7 @@ export function openDb() {
   });
 }
 
-// ─── Entry CRUD ───────────────────────────────────────────────────────────────
+// --- Entry CRUD ---------------------------------------------------------------
 
 /** Insert or update entries */
 export async function putEntries(entries) {
@@ -169,7 +169,7 @@ export async function markSynced(ids) {
   });
 }
 
-// ─── Settings ─────────────────────────────────────────────────────────────────
+// --- Settings -----------------------------------------------------------------
 
 export async function getSetting(key) {
   const db = await openDb();

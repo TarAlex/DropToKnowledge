@@ -1,5 +1,5 @@
 /**
- * app.js — Main controller for 1folder PWA
+ * app.js — Main controller for DropToKnowledge PWA
  * Connects DB, storage adapters, UI rendering, settings, and SW messages.
  */
 
@@ -16,7 +16,7 @@ import {
 import { OneDrive, GoogleDrive, Dropbox } from './storage-cloud.js';
 import { showToast, updateCounts, renderItems, renderItemDetail } from './ui.js';
 
-// ─── App state ────────────────────────────────────────────────────────────────
+// --- App state ----------------------------------------------------------------
 
 const state = {
   filter:   'all',
@@ -25,12 +25,11 @@ const state = {
   settings: {
     storageMode:     'local',
     organizeByType:  true,
-    datePrefix:      true,
-    autoSync:        false
+    datePrefix:      true
   }
 };
 
-// ─── Cloud adapters map ───────────────────────────────────────────────────────
+// --- Cloud adapters map -------------------------------------------------------
 
 const CLOUD_ADAPTERS = {
   onedrive: OneDrive,
@@ -38,12 +37,12 @@ const CLOUD_ADAPTERS = {
   dropbox:  Dropbox
 };
 
-// ─── DOM refs ─────────────────────────────────────────────────────────────────
+// --- DOM refs -----------------------------------------------------------------
 
 const $  = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// --- Init ---------------------------------------------------------------------
 
 async function init() {
   await loadSettings();
@@ -53,7 +52,6 @@ async function init() {
   setupSidebar();
   setupSearchBar();
   setupSortBar();
-  setupFab();
   setupSettingsModal();
   setupItemModal();
   setupServiceWorkerMessages();
@@ -64,33 +62,31 @@ async function init() {
     await renderList();
     await updateBadgeCounts();
     showToast('New item added to inbox!', 'success');
-    history.replaceState({}, '', '/');
-
-    // Auto-sync if enabled
-    if (state.settings.autoSync) {
-      syncAll(true);
-    }
+    history.replaceState({}, '', './');
+    syncUnsynced();
   }
   if (params.has('share_error')) {
     showToast('Error receiving shared item', 'error');
-    history.replaceState({}, '', '/');
+    history.replaceState({}, '', './');
   }
 
-  // Restore directory name display
+  // Restore directory name display and sync any pending items
   if (state.settings.storageMode === 'local') {
     const name = await getDirectoryName();
-    if (name) $('folder-path').textContent = `📂 ${name}`;
+    if (name) {
+      $('folder-path').textContent = `\u{1F4C2} ${name}`;
+      syncUnsynced();
+    }
   }
 }
 
-// ─── Load / save settings ─────────────────────────────────────────────────────
+// --- Load / save settings -----------------------------------------------------
 
 async function loadSettings() {
   const saved = await getAllSettings();
   if (saved.storageMode)    state.settings.storageMode    = saved.storageMode;
   if (saved.organizeByType !== undefined) state.settings.organizeByType = saved.organizeByType;
   if (saved.datePrefix     !== undefined) state.settings.datePrefix     = saved.datePrefix;
-  if (saved.autoSync       !== undefined) state.settings.autoSync       = saved.autoSync;
 }
 
 async function saveSetting(key, value) {
@@ -98,7 +94,7 @@ async function saveSetting(key, value) {
   await setSetting(key, value);
 }
 
-// ─── Render helpers ───────────────────────────────────────────────────────────
+// --- Render helpers -----------------------------------------------------------
 
 async function renderList() {
   const entries = await getAllEntries({
@@ -125,7 +121,7 @@ async function updateBadgeCounts() {
   updateCounts(counts);
 }
 
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
+// --- Sidebar ------------------------------------------------------------------
 
 function setupSidebar() {
   const sidebar  = $('sidebar');
@@ -161,7 +157,7 @@ function setupSidebar() {
   });
 }
 
-// ─── Search ───────────────────────────────────────────────────────────────────
+// --- Search -------------------------------------------------------------------
 
 function setupSearchBar() {
   const toggleBtn = $('search-toggle');
@@ -192,7 +188,7 @@ function setupSearchBar() {
   });
 }
 
-// ─── Sort ─────────────────────────────────────────────────────────────────────
+// --- Sort ---------------------------------------------------------------------
 
 function setupSortBar() {
   const toggleBtn = $('sort-toggle');
@@ -211,53 +207,39 @@ function setupSortBar() {
   });
 }
 
-// ─── FAB / Sync ───────────────────────────────────────────────────────────────
+// --- Auto-sync ----------------------------------------------------------------
 
-function setupFab() {
-  $('fab-sync').addEventListener('click', () => syncAll(false));
-}
-
-async function syncAll(silent = false) {
-  const mode    = state.settings.storageMode;
-  const opts    = { organizeByType: state.settings.organizeByType, datePrefix: state.settings.datePrefix };
-
-  const fabIcon = $('fab-icon');
-  fabIcon.textContent = '⏳';
+/** Sync all unsynced entries to the configured storage destination. */
+async function syncUnsynced() {
+  const mode = state.settings.storageMode;
+  const opts = { organizeByType: state.settings.organizeByType, datePrefix: state.settings.datePrefix };
 
   try {
-    const unsynced = await getAllEntries({ sortBy: 'date-asc' });
-    const toSync   = unsynced.filter(e => !e.synced);
-
-    if (!toSync.length) {
-      if (!silent) showToast('Everything already synced ✓', 'info');
-      fabIcon.textContent = '💾';
-      return;
-    }
+    const all    = await getAllEntries({ sortBy: 'date-asc' });
+    const toSync = all.filter(e => !e.synced);
+    if (!toSync.length) return;
 
     let result;
     if (mode === 'local') {
       result = await syncLocal(toSync, opts);
     } else {
       const adapter = CLOUD_ADAPTERS[mode];
-      if (!adapter) throw new Error(`Unknown storage mode: ${mode}`);
+      if (!adapter) return;
       result = await adapter.syncEntries(toSync, opts);
     }
 
     await renderList();
     await updateBadgeCounts();
 
-    if (!silent) {
-      showToast(`Synced ${result.synced} item(s)${result.errors.length ? ` (${result.errors.length} error(s))` : ''}`, result.errors.length ? 'warning' : 'success');
+    if (result.errors.length) {
+      showToast(`Saved ${result.synced} item(s), ${result.errors.length} failed`, 'warning');
     }
   } catch (err) {
-    console.error('[app] Sync error:', err);
-    if (!silent) showToast(`Sync failed: ${err.message}`, 'error');
-  } finally {
-    fabIcon.textContent = '💾';
+    console.error('[app] Auto-sync error:', err);
   }
 }
 
-// ─── Settings modal ───────────────────────────────────────────────────────────
+// --- Settings modal -----------------------------------------------------------
 
 function openSettingsModal() {
   const modal = $('settings-modal');
@@ -266,7 +248,7 @@ function openSettingsModal() {
 }
 
 function setupSettingsModal() {
-  // Open from topbar
+  // Close handlers
   $('settings-close').addEventListener('click', () => $('settings-modal').classList.add('hidden'));
   $('settings-modal').querySelector('.modal-backdrop').addEventListener('click', () => $('settings-modal').classList.add('hidden'));
 
@@ -287,15 +269,17 @@ function setupSettingsModal() {
     }
     try {
       const name = await chooseDirectory();
-      $('folder-path').textContent = `📂 ${name}`;
+      $('folder-path').textContent = `\u{1F4C2} ${name}`;
       showToast('Folder selected', 'success');
+      // Sync any pending items to the newly chosen folder
+      syncUnsynced();
     } catch (err) {
       if (err.name !== 'AbortError') showToast(`Could not select folder: ${err.message}`, 'error');
     }
   });
 
-  // Cloud connect
-  $('cloud-connect-btn').addEventListener('click', async () => {
+  // Cloud connect (may not exist in simplified UI)
+  $('cloud-connect-btn')?.addEventListener('click', async () => {
     const mode    = state.settings.storageMode;
     const adapter = CLOUD_ADAPTERS[mode];
     if (!adapter) return;
@@ -312,8 +296,8 @@ function setupSettingsModal() {
     }
   });
 
-  // Cloud disconnect
-  $('cloud-disconnect-btn').addEventListener('click', async () => {
+  // Cloud disconnect (may not exist in simplified UI)
+  $('cloud-disconnect-btn')?.addEventListener('click', async () => {
     const mode    = state.settings.storageMode;
     const adapter = CLOUD_ADAPTERS[mode];
     if (!adapter) return;
@@ -322,19 +306,16 @@ function setupSettingsModal() {
     showToast('Disconnected', 'info');
   });
 
-  // Toggles
-  $('organize-by-type').addEventListener('change', async e => {
+  // Toggles (may not exist in simplified UI)
+  $('organize-by-type')?.addEventListener('change', async e => {
     await saveSetting('organizeByType', e.target.checked);
   });
-  $('date-prefix').addEventListener('change', async e => {
+  $('date-prefix')?.addEventListener('change', async e => {
     await saveSetting('datePrefix', e.target.checked);
   });
-  $('auto-sync').addEventListener('change', async e => {
-    await saveSetting('autoSync', e.target.checked);
-  });
 
-  // Danger zone
-  $('clear-inbox').addEventListener('click', async () => {
+  // Danger zone (may not exist in simplified UI)
+  $('clear-inbox')?.addEventListener('click', async () => {
     if (!confirm('Delete all inbox items? This cannot be undone.')) return;
     await clearAllEntries();
     await renderList();
@@ -352,33 +333,38 @@ async function syncSettingsUI() {
 
   // Show/hide sections
   const isLocal = s.storageMode === 'local';
-  $('local-folder-section').classList.toggle('hidden', !isLocal);
-  $('cloud-section').classList.toggle('hidden', isLocal);
+  $('local-folder-section')?.classList.toggle('hidden', !isLocal);
+  $('cloud-section')?.classList.toggle('hidden', isLocal);
 
-  // Cloud section text
-  if (!isLocal) {
+  // Cloud section text (may not exist in simplified UI)
+  if (!isLocal && $('cloud-section')) {
     const adapter = CLOUD_ADAPTERS[s.storageMode];
     if (adapter) {
       const connected = await adapter.isConnected();
-      $('cloud-connect-btn').parentElement.classList.toggle('hidden', connected);
-      $('cloud-connected-info').classList.toggle('hidden', !connected);
-      $('cloud-stub-text').textContent = connected
-        ? `Connected to ${adapter.name}`
-        : `Connect your ${adapter.name} account to sync`;
+      $('cloud-connect-btn')?.parentElement.classList.toggle('hidden', connected);
+      $('cloud-connected-info')?.classList.toggle('hidden', !connected);
+      const stubText = $('cloud-stub-text');
+      if (stubText) {
+        stubText.textContent = connected
+          ? `Connected to ${adapter.name}`
+          : `Connect your ${adapter.name} account to sync`;
+      }
       if (connected) {
         const info = await adapter.getUserInfo();
-        $('cloud-user-email').textContent = info?.email || '—';
+        const emailEl = $('cloud-user-email');
+        if (emailEl) emailEl.textContent = info?.email || '\u2014';
       }
     }
   }
 
-  // Toggles
-  $('organize-by-type').checked = s.organizeByType;
-  $('date-prefix').checked      = s.datePrefix;
-  $('auto-sync').checked        = s.autoSync;
+  // Toggles (may not exist in simplified UI)
+  const orgEl = $('organize-by-type');
+  if (orgEl) orgEl.checked = s.organizeByType;
+  const dateEl = $('date-prefix');
+  if (dateEl) dateEl.checked = s.datePrefix;
 }
 
-// ─── Item detail modal ────────────────────────────────────────────────────────
+// --- Item detail modal --------------------------------------------------------
 
 function setupItemModal() {
   $('item-modal-close').addEventListener('click', closeItemModal);
@@ -413,19 +399,19 @@ function closeItemModal() {
   $('item-modal-body').innerHTML = '';
 }
 
-// ─── Service Worker messages ──────────────────────────────────────────────────
+// --- Service Worker messages --------------------------------------------------
 
 function setupServiceWorkerMessages() {
   navigator.serviceWorker?.addEventListener('message', async event => {
     if (event.data?.type === 'NEW_SHARED_ITEMS') {
       await renderList();
       await updateBadgeCounts();
-      showToast(`${event.data.count} new item(s) in inbox`, 'success');
-      if (state.settings.autoSync) syncAll(true);
+      showToast(`${event.data.count} new item(s) saved`, 'success');
+      syncUnsynced();
     }
   });
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
+// --- Boot ---------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', init);

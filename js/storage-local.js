@@ -1,5 +1,5 @@
 /**
- * storage-local.js — File System Access API storage adapter for 1folder
+ * storage-local.js — File System Access API storage adapter for DropToKnowledge
  * Writes entries into a user-chosen directory, organized by type.
  */
 
@@ -10,7 +10,7 @@ import { getSetting, setSetting, markSynced } from './db.js';
 
 let _dirHandle = null;
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// --- Public API ---------------------------------------------------------------
 
 /** Returns true if File System Access API is available */
 export function isSupported() {
@@ -89,7 +89,7 @@ export async function syncEntries(entries, opts = {}) {
   return { synced: syncedIds.length, errors };
 }
 
-// ─── Private helpers ──────────────────────────────────────────────────────────
+// --- Private helpers ----------------------------------------------------------
 
 async function writeEntry(entry, { organizeByType, datePrefix }) {
   let targetDir = _dirHandle;
@@ -157,11 +157,11 @@ async function verifyPermission(handle, mode = 'readwrite') {
 }
 
 // Store the actual FileSystemDirectoryHandle in IDB (Chrome 86+ supports this natively)
-const IDB_HANDLE_KEY = '1folder-dir-handle';
+const IDB_HANDLE_KEY = 'droptoknowledge-dir-handle';
 
 async function persistHandle(handle) {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('1folder-handles', 1);
+    const req = indexedDB.open('droptoknowledge-handles', 1);
     req.onupgradeneeded = e => {
       e.target.result.createObjectStore('handles');
     };
@@ -178,7 +178,7 @@ async function persistHandle(handle) {
 
 async function getHandleFromIdb() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('1folder-handles', 1);
+    const req = indexedDB.open('droptoknowledge-handles', 1);
     req.onupgradeneeded = e => {
       e.target.result.createObjectStore('handles');
     };
