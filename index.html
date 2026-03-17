@@ -66,12 +66,6 @@
         </button>
       </div>
 
-      <div class="sidebar-section sidebar-footer-section">
-        <button class="nav-item" id="settings-btn">
-          <span class="nav-icon">⚙️</span>
-          <span class="nav-text">Settings</span>
-        </button>
-      </div>
     </nav>
 
     <!-- Overlay for sidebar on mobile -->
@@ -87,6 +81,7 @@
         <div class="topbar-actions">
           <button class="icon-btn" id="search-toggle" aria-label="Search">🔍</button>
           <button class="icon-btn" id="sort-toggle" aria-label="Sort">⇅</button>
+          <button class="icon-btn" id="settings-btn" aria-label="Settings">⚙️</button>
         </div>
       </header>
 
@@ -141,15 +136,57 @@
               <span class="radio-desc">Save files to a folder on your device</span>
             </span>
           </label>
+          <label class="radio-option">
+            <input type="radio" name="storage-mode" value="onedrive" id="mode-onedrive" />
+            <span class="radio-label">
+              <span class="radio-title">☁️ OneDrive</span>
+              <span class="radio-desc">Sync to Microsoft OneDrive</span>
+            </span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="storage-mode" value="gdrive" id="mode-gdrive" />
+            <span class="radio-label">
+              <span class="radio-title">🗂️ Google Drive</span>
+              <span class="radio-desc">Sync to Google Drive</span>
+            </span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="storage-mode" value="dropbox" id="mode-dropbox" />
+            <span class="radio-label">
+              <span class="radio-title">📦 Dropbox</span>
+              <span class="radio-desc">Sync to Dropbox</span>
+            </span>
+          </label>
         </section>
 
         <!-- Local folder -->
         <section class="settings-section" id="local-folder-section">
           <h3>Local folder</h3>
+          <div class="info-banner hidden" id="local-unsupported-notice">
+            ℹ️ Local folder sync is not available on Android. Choose cloud storage above.
+          </div>
           <div class="folder-info" id="folder-info">
             <span id="folder-path">No folder selected</span>
           </div>
           <button class="btn btn-primary" id="choose-directory">Choose folder…</button>
+        </section>
+
+        <!-- Cloud account -->
+        <section class="settings-section hidden" id="cloud-section">
+          <h3>Cloud account</h3>
+          <div class="cloud-stub">
+            <p id="cloud-stub-text">Connect your account to sync</p>
+            <div id="cloud-connect-btn-wrap">
+              <button class="btn btn-primary btn-sm" id="cloud-connect-btn">Connect…</button>
+            </div>
+            <div class="hidden" id="cloud-connected-info">
+              <div class="connected-user">
+                <span>Signed in as</span>
+                <span class="connected-email" id="cloud-user-email">—</span>
+              </div>
+              <button class="btn btn-outline btn-sm" id="cloud-disconnect-btn">Disconnect</button>
+            </div>
+          </div>
         </section>
 
       </div>

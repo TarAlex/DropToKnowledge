@@ -129,6 +129,31 @@ async function writeEntry(entry, { organizeByType, datePrefix }) {
   }
 
   await writable.close();
+  await writeSidecar(entry, targetDir, filename);
+}
+
+async function writeSidecar(entry, targetDir, primaryFilename) {
+  const base = primaryFilename.replace(/\.[^.]+$/, '');
+  const sidecarName = `${base}_notes.md`;
+  const tags = (entry.tags || []).join(', ');
+  const comment = entry.comment || '(no comment)';
+  const content = [
+    '---',
+    `title: ${entry.title || entry.filename || ''}`,
+    `type: ${entry.type}`,
+    `id: ${entry.id}`,
+    `saved: ${entry.createdAt}`,
+    `tags: [${tags}]`,
+    '---',
+    '',
+    '## Comment',
+    '',
+    comment
+  ].join('\n');
+  const fileHandle = await targetDir.getFileHandle(sidecarName, { create: true });
+  const writable   = await fileHandle.createWritable();
+  await writable.write(content);
+  await writable.close();
 }
 
 function typeToFolder(type) {

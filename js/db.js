@@ -149,6 +149,22 @@ export async function countByType() {
   return counts;
 }
 
+/** Merge changes into an existing entry and mark it unsynced */
+export async function updateEntry(id, changes) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    const req   = store.get(id);
+    req.onsuccess = () => {
+      if (!req.result) { resolve(); return; }
+      store.put({ ...req.result, ...changes, synced: false });
+    };
+    tx.oncomplete = resolve;
+    tx.onerror    = () => reject(tx.error);
+  });
+}
+
 /** Mark entries as synced */
 export async function markSynced(ids) {
   const db = await openDb();

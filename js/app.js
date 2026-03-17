@@ -5,7 +5,7 @@
 
 import {
   getAllEntries, getEntry, deleteEntry, clearAllEntries,
-  countByType, getAllSettings, setSetting
+  countByType, getAllSettings, setSetting, updateEntry
 } from './db.js';
 
 import {
@@ -322,6 +322,12 @@ function setupSettingsModal() {
     await updateBadgeCounts();
     showToast('Inbox cleared', 'info');
   });
+
+  // Show Android limitation notice if File System Access API is unavailable
+  if (!isLocalSupported()) {
+    $('local-unsupported-notice')?.classList.remove('hidden');
+    $('choose-directory')?.setAttribute('disabled', 'true');
+  }
 }
 
 async function syncSettingsUI() {
@@ -390,6 +396,15 @@ async function openItemDetail(entry) {
   // Reload with full content (sw stores ArrayBuffer; IDB re-fetches it)
   const full = await getEntry(entry.id);
   renderItemDetail(full, body);
+
+  $('save-notes-btn').addEventListener('click', async () => {
+    const tagsRaw = $('detail-tags').value.trim();
+    const comment = $('detail-comment').value;
+    const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+    await updateEntry(entry.id, { comment, tags });
+    showToast('Notes saved', 'success');
+    await renderList();
+  });
 
   modal.classList.remove('hidden');
 }

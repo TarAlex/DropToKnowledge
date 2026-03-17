@@ -196,6 +196,20 @@ export function renderItemDetail(entry, container) {
       }).catch(() => {});
     });
   });
+
+  // Notes / tags section
+  const notesSection = document.createElement('div');
+  notesSection.className = 'item-detail-notes';
+  const existingTags = (entry.tags || []).join(', ');
+  const existingComment = entry.comment || '';
+  notesSection.innerHTML = `
+    <label class="notes-field-label">Tags <span class="notes-hint">(comma-separated)</span></label>
+    <input class="notes-input" id="detail-tags" value="${escapeHtml(existingTags)}" placeholder="tag1, tag2\u2026" />
+    <label class="notes-field-label">Comment</label>
+    <textarea class="notes-textarea" id="detail-comment" rows="4" placeholder="Add a note\u2026">${escapeHtml(existingComment)}</textarea>
+    <button id="save-notes-btn" class="btn btn-primary btn-sm">Save notes</button>
+  `;
+  container.appendChild(notesSection);
 }
 
 // --- Utility ------------------------------------------------------------------
@@ -228,7 +242,7 @@ function truncate(str, n) {
   return str.length > n ? str.slice(0, n) + '\u2026' : str;
 }
 
-function escapeHtml(str) {
+export function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

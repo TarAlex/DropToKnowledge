@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 'use strict';
 
-const APP_VERSION    = '1.0.1';
+const APP_VERSION    = '1.1.0';
 const CACHE_NAME     = `droptoknowledge-cache-${APP_VERSION}`;
 const SHARE_URL      = './share-handler';
 const OFFLINE_URLS   = [
