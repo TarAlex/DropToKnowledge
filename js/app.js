@@ -10,7 +10,7 @@ import {
 
 import {
   isSupported as isLocalSupported,
-  chooseDirectory, restoreDirectory, getDirectoryName, syncEntries as syncLocal
+  chooseDirectory, restoreDirectory, getDirectoryName, saveEntryDirectly
 } from './storage-local.js';
 
 import { OneDrive, GoogleDrive, Dropbox } from './storage-cloud.js';
@@ -63,19 +63,17 @@ async function init() {
     await updateBadgeCounts();
     showToast('New item added to inbox!', 'success');
     history.replaceState({}, '', './');
-    syncUnsynced();
   }
   if (params.has('share_error')) {
     showToast('Error receiving shared item', 'error');
     history.replaceState({}, '', './');
   }
 
-  // Restore directory name display and sync any pending items
+  // Restore directory name display
   if (state.settings.storageMode === 'local') {
     const name = await getDirectoryName();
     if (name) {
       $('folder-path').textContent = `\u{1F4C2} ${name}`;
-      syncUnsynced();
     }
   }
 }
@@ -207,38 +205,6 @@ function setupSortBar() {
   });
 }
 
-// --- Auto-sync ----------------------------------------------------------------
-
-/** Sync all unsynced entries to the configured storage destination. */
-async function syncUnsynced() {
-  const mode = state.settings.storageMode;
-  const opts = { organizeByType: state.settings.organizeByType, datePrefix: state.settings.datePrefix };
-
-  try {
-    const all    = await getAllEntries({ sortBy: 'date-asc' });
-    const toSync = all.filter(e => !e.synced);
-    if (!toSync.length) return;
-
-    let result;
-    if (mode === 'local') {
-      result = await syncLocal(toSync, opts);
-    } else {
-      const adapter = CLOUD_ADAPTERS[mode];
-      if (!adapter) return;
-      result = await adapter.syncEntries(toSync, opts);
-    }
-
-    await renderList();
-    await updateBadgeCounts();
-
-    if (result.errors.length) {
-      showToast(`Saved ${result.synced} item(s), ${result.errors.length} failed`, 'warning');
-    }
-  } catch (err) {
-    console.error('[app] Auto-sync error:', err);
-  }
-}
-
 // --- Settings modal -----------------------------------------------------------
 
 function openSettingsModal() {
@@ -271,14 +237,12 @@ function setupSettingsModal() {
       const name = await chooseDirectory();
       $('folder-path').textContent = `\u{1F4C2} ${name}`;
       showToast('Folder selected', 'success');
-      // Sync any pending items to the newly chosen folder
-      syncUnsynced();
     } catch (err) {
       if (err.name !== 'AbortError') showToast(`Could not select folder: ${err.message}`, 'error');
     }
   });
 
-  // Cloud connect (may not exist in simplified UI)
+  // Cloud connect
   $('cloud-connect-btn')?.addEventListener('click', async () => {
     const mode    = state.settings.storageMode;
     const adapter = CLOUD_ADAPTERS[mode];
@@ -296,7 +260,7 @@ function setupSettingsModal() {
     }
   });
 
-  // Cloud disconnect (may not exist in simplified UI)
+  // Cloud disconnect
   $('cloud-disconnect-btn')?.addEventListener('click', async () => {
     const mode    = state.settings.storageMode;
     const adapter = CLOUD_ADAPTERS[mode];
@@ -304,23 +268,6 @@ function setupSettingsModal() {
     await adapter.disconnect();
     syncSettingsUI();
     showToast('Disconnected', 'info');
-  });
-
-  // Toggles (may not exist in simplified UI)
-  $('organize-by-type')?.addEventListener('change', async e => {
-    await saveSetting('organizeByType', e.target.checked);
-  });
-  $('date-prefix')?.addEventListener('change', async e => {
-    await saveSetting('datePrefix', e.target.checked);
-  });
-
-  // Danger zone (may not exist in simplified UI)
-  $('clear-inbox')?.addEventListener('click', async () => {
-    if (!confirm('Delete all inbox items? This cannot be undone.')) return;
-    await clearAllEntries();
-    await renderList();
-    await updateBadgeCounts();
-    showToast('Inbox cleared', 'info');
   });
 
   // Show Android limitation notice if File System Access API is unavailable
@@ -342,7 +289,7 @@ async function syncSettingsUI() {
   $('local-folder-section')?.classList.toggle('hidden', !isLocal);
   $('cloud-section')?.classList.toggle('hidden', isLocal);
 
-  // Cloud section text (may not exist in simplified UI)
+  // Cloud section text
   if (!isLocal && $('cloud-section')) {
     const adapter = CLOUD_ADAPTERS[s.storageMode];
     if (adapter) {
@@ -362,12 +309,6 @@ async function syncSettingsUI() {
       }
     }
   }
-
-  // Toggles (may not exist in simplified UI)
-  const orgEl = $('organize-by-type');
-  if (orgEl) orgEl.checked = s.organizeByType;
-  const dateEl = $('date-prefix');
-  if (dateEl) dateEl.checked = s.datePrefix;
 }
 
 // --- Item detail modal --------------------------------------------------------
@@ -403,6 +344,7 @@ async function openItemDetail(entry) {
     const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
     await updateEntry(entry.id, { comment, tags });
     showToast('Notes saved', 'success');
+    closeItemModal();
     await renderList();
   });
 
@@ -419,10 +361,20 @@ function closeItemModal() {
 function setupServiceWorkerMessages() {
   navigator.serviceWorker?.addEventListener('message', async event => {
     if (event.data?.type === 'NEW_SHARED_ITEMS') {
+      // The event.data contains the entries array.
+      // Now save each entry directly to the selected folder.
+      if (event.data.entries) {
+        for (const entry of event.data.entries) {
+          try {
+            await saveEntryDirectly(entry);
+          } catch (e) {
+            console.error('Error saving entry directly:', e);
+          }
+        }
+      }
       await renderList();
       await updateBadgeCounts();
       showToast(`${event.data.count} new item(s) saved`, 'success');
-      syncUnsynced();
     }
   });
 }
