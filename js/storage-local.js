@@ -6,8 +6,6 @@
 import { getSetting, setSetting, markSynced } from './db.js';
 
 // We persist the FileSystemDirectoryHandle in IndexedDB so it survives page reloads.
-// Note: The handle must be re-verified each session (user may revoke permission).
-
 let _dirHandle = null;
 
 // --- Public API ---------------------------------------------------------------
@@ -31,12 +29,6 @@ export async function chooseDirectory() {
 /** Restore persisted handle from IDB (ask permission again if needed) */
 export async function restoreDirectory() {
   try {
-    const serialized = await getSetting('dirHandle');
-    if (!serialized) return null;
-
-    // We store by name only (can't serialize handles to IDB reliably cross-origin)
-    // On Chrome 86+ handles can be stored in IDB natively
-    // Here we attempt native IDB storage first, fall back to name only
     const handle = await getHandleFromIdb();
     if (!handle) return null;
 
@@ -99,60 +91,61 @@ async function writeEntry(entry, { organizeByType, datePrefix }) {
     targetDir = await _dirHandle.getDirectoryHandle(subdirName, { create: true });
   }
 
-  const filename = buildFilename(entry, datePrefix);
-  const fileHandle = await targetDir.getFileHandle(filename, { create: true });
-  const writable   = await fileHandle.createWritable();
+  const baseFilename = buildFilename(entry, datePrefix);
 
   if (entry.content) {
     // Binary file (image, audio, doc etc.)
+    const fileHandle = await targetDir.getFileHandle(baseFilename, { create: true });
+    const writable = await fileHandle.createWritable();
     await writable.write(entry.content);
-  } else if (entry.type === 'url') {
-    // Write URL as plain text with metadata
-    const lines = [
-      entry.url || entry.text || '',
-      '',
-      `Title: ${entry.title || ''}`,
-      `Saved: ${entry.createdAt}`
-    ];
-    await writable.write(lines.join('\n'));
-  } else {
-    // Note / text
-    const lines = [
-      entry.title ? `# ${entry.title}` : '',
-      entry.title ? '' : null,
-      entry.text || '',
-      '',
-      `---`,
-      `Saved: ${entry.createdAt}`
-    ].filter(l => l !== null);
-    await writable.write(lines.join('\n'));
-  }
+    await writable.close();
 
-  await writable.close();
-  await writeSidecar(entry, targetDir, filename);
+    // For binary files, we still want to save metadata (tags/comments)
+    await updateMetadataFile(entry, targetDir, baseFilename);
+  } else {
+    // For URLs and Notes, we save everything in a single .md file
+    const mdFilename = baseFilename.replace(/\.[^.]+$/, '') + '.md';
+    await updateMetadataFile(entry, targetDir, mdFilename);
+  }
 }
 
-async function writeSidecar(entry, targetDir, primaryFilename) {
-  const base = primaryFilename.replace(/\.[^.]+$/, '');
-  const sidecarName = `${base}_notes.md`;
+/**
+ * Updates (or creates) an .md file with frontmatter metadata and content.
+ */
+async function updateMetadataFile(entry, targetDir, filename) {
+  const mdFilename = filename.endsWith('.md') ? filename : `${filename}.md`;
   const tags = (entry.tags || []).join(', ');
-  const comment = entry.comment || '(no comment)';
-  const content = [
+  const comment = entry.comment || '';
+
+  let bodyContent = '';
+  if (entry.type === 'url') {
+    bodyContent = `[${entry.url || entry.text}](${entry.url || entry.text})`;
+  } else if (entry.type === 'note') {
+    bodyContent = entry.text || '';
+  } else {
+    // Binary file metadata
+    bodyContent = `Metadata for shared file: ${filename}`;
+  }
+
+  const fileContent = [
     '---',
-    `title: ${entry.title || entry.filename || ''}`,
+    `title: "${(entry.title || '').replace(/"/g, '\\"')}"`,
     `type: ${entry.type}`,
     `id: ${entry.id}`,
     `saved: ${entry.createdAt}`,
     `tags: [${tags}]`,
     '---',
     '',
-    '## Comment',
+    bodyContent,
+    '',
+    '## Notes',
     '',
     comment
   ].join('\n');
-  const fileHandle = await targetDir.getFileHandle(sidecarName, { create: true });
+
+  const fileHandle = await targetDir.getFileHandle(mdFilename, { create: true });
   const writable   = await fileHandle.createWritable();
-  await writable.write(content);
+  await writable.write(fileContent);
   await writable.close();
 }
 
@@ -168,10 +161,11 @@ function typeToFolder(type) {
 }
 
 function buildFilename(entry, datePrefix) {
-  if (!datePrefix) return entry.filename;
+  if (entry.filename) return entry.filename;
 
-  // entry.filename already has a date prefix from SW, use as-is
-  return entry.filename || `${entry.createdAt.replace(/[:.]/g, '-')}_${entry.id.slice(0, 8)}.txt`;
+  const dateStr = entry.createdAt.replace(/[:.]/g, '-').slice(0, 19);
+  const ext = entry.type === 'url' ? '.md' : (entry.type === 'note' ? '.md' : '.bin');
+  return `${dateStr}_${entry.id.slice(0, 8)}${ext}`;
 }
 
 async function verifyPermission(handle, mode = 'readwrite') {
@@ -181,21 +175,18 @@ async function verifyPermission(handle, mode = 'readwrite') {
   return false;
 }
 
-// Store the actual FileSystemDirectoryHandle in IDB (Chrome 86+ supports this natively)
 const IDB_HANDLE_KEY = 'droptoknowledge-dir-handle';
 
 async function persistHandle(handle) {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open('droptoknowledge-handles', 1);
-    req.onupgradeneeded = e => {
-      e.target.result.createObjectStore('handles');
-    };
+    req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
     req.onsuccess = () => {
-      const db  = req.result;
-      const tx  = db.transaction('handles', 'readwrite');
+      const db = req.result;
+      const tx = db.transaction('handles', 'readwrite');
       tx.objectStore('handles').put(handle, IDB_HANDLE_KEY);
       tx.oncomplete = resolve;
-      tx.onerror    = () => reject(tx.error);
+      tx.onerror = () => reject(tx.error);
     };
     req.onerror = () => reject(req.error);
   });
@@ -204,16 +195,14 @@ async function persistHandle(handle) {
 async function getHandleFromIdb() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open('droptoknowledge-handles', 1);
-    req.onupgradeneeded = e => {
-      e.target.result.createObjectStore('handles');
-    };
+    req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
     req.onsuccess = () => {
-      const db    = req.result;
-      const tx    = db.transaction('handles', 'readonly');
+      const db = req.result;
+      const tx = db.transaction('handles', 'readonly');
       const store = tx.objectStore('handles');
-      const get   = store.get(IDB_HANDLE_KEY);
+      const get = store.get(IDB_HANDLE_KEY);
       get.onsuccess = () => resolve(get.result || null);
-      get.onerror   = () => resolve(null);
+      get.onerror = () => resolve(null);
     };
     req.onerror = () => resolve(null);
   });
