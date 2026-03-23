@@ -10,7 +10,7 @@ import {
 
 import {
   isSupported as isLocalSupported,
-  chooseDirectory, restoreDirectory, getDirectoryName, saveEntryDirectly
+  chooseDirectory, restoreDirectory, getDirectoryName, saveEntryDirectly, updateMetadataFile
 } from './storage-local.js';
 
 import { OneDrive, GoogleDrive, Dropbox } from './storage-cloud.js';
@@ -61,7 +61,7 @@ async function init() {
   if (params.has('shared')) {
     await renderList();
     await updateBadgeCounts();
-    showToast('New item added to inbox!', 'success');
+    showToast('New item saved!', 'success');
     history.replaceState({}, '', './');
   }
   if (params.has('share_error')) {
@@ -343,6 +343,19 @@ async function openItemDetail(entry) {
     const comment = $('detail-comment').value;
     const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
     await updateEntry(entry.id, { comment, tags });
+
+    // Sync the updated metadata back to the file system
+    if (state.settings.storageMode === 'local') {
+      try {
+        const name = await getDirectoryName();
+        if (name) {
+          await saveEntryDirectly(full); // This now handles updating the md file correctly
+        }
+      } catch (e) {
+        console.error('Failed to update file on disk:', e);
+      }
+    }
+
     showToast('Notes saved', 'success');
     closeItemModal();
     await renderList();
@@ -361,8 +374,9 @@ function closeItemModal() {
 function setupServiceWorkerMessages() {
   navigator.serviceWorker?.addEventListener('message', async event => {
     if (event.data?.type === 'NEW_SHARED_ITEMS') {
-      // The event.data contains the entries array.
-      // Now save each entry directly to the selected folder.
+      // Clear all entries first to prevent duplication after shared redirect
+      await clearAllEntries();
+
       if (event.data.entries) {
         for (const entry of event.data.entries) {
           try {
@@ -374,7 +388,7 @@ function setupServiceWorkerMessages() {
       }
       await renderList();
       await updateBadgeCounts();
-      showToast(`${event.data.count} new item(s) saved`, 'success');
+      showToast(`Saved to inbox`, 'success');
     }
   });
 }

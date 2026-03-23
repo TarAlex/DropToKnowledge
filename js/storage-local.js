@@ -3,7 +3,7 @@
  * Writes entries into a user-chosen directory, organized by type.
  */
 
-import { getSetting, setSetting, markSynced } from './db.js';
+import { getSetting, setSetting } from './db.js';
 
 // We persist the FileSystemDirectoryHandle in IndexedDB so it survives page reloads.
 let _dirHandle = null;
@@ -32,8 +32,11 @@ export async function restoreDirectory() {
     const handle = await getHandleFromIdb();
     if (!handle) return null;
 
-    const permission = await verifyPermission(handle);
-    if (!permission) return null;
+    // Check if we already have permission, if not, we can't "auto-restore"
+    // without a user gesture in most browsers.
+    if ((await handle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+        return null;
+    }
 
     _dirHandle = handle;
     return handle.name;
@@ -49,41 +52,16 @@ export async function getDirectoryName() {
   return restoreDirectory();
 }
 
-/** Sync an array of entries to the selected directory */
-export async function syncEntries(entries, opts = {}) {
+/**
+ * Main entry point for saving: writes file + metadata
+ */
+export async function saveEntryDirectly(entry, opts = {}) {
   if (!_dirHandle) {
     const restored = await restoreDirectory();
     if (!restored) throw new Error('No directory selected. Please choose a folder in Settings.');
   }
 
-  const {
-    organizeByType = true,
-    datePrefix     = true
-  } = opts;
-
-  const syncedIds = [];
-  const errors    = [];
-
-  for (const entry of entries) {
-    try {
-      await writeEntry(entry, { organizeByType, datePrefix });
-      syncedIds.push(entry.id);
-    } catch (err) {
-      console.error('[storage-local] Failed to write entry:', entry.id, err);
-      errors.push({ id: entry.id, error: err.message });
-    }
-  }
-
-  if (syncedIds.length > 0) {
-    await markSynced(syncedIds);
-  }
-
-  return { synced: syncedIds.length, errors };
-}
-
-// --- Private helpers ----------------------------------------------------------
-
-async function writeEntry(entry, { organizeByType, datePrefix }) {
+  const { organizeByType = true, datePrefix = true } = opts;
   let targetDir = _dirHandle;
 
   if (organizeByType) {
@@ -100,7 +78,7 @@ async function writeEntry(entry, { organizeByType, datePrefix }) {
     await writable.write(entry.content);
     await writable.close();
 
-    // For binary files, we still want to save metadata (tags/comments)
+    // Save metadata in matching .md file
     await updateMetadataFile(entry, targetDir, baseFilename);
   } else {
     // For URLs and Notes, we save everything in a single .md file
@@ -112,7 +90,7 @@ async function writeEntry(entry, { organizeByType, datePrefix }) {
 /**
  * Updates (or creates) an .md file with frontmatter metadata and content.
  */
-async function updateMetadataFile(entry, targetDir, filename) {
+export async function updateMetadataFile(entry, targetDir, filename) {
   const mdFilename = filename.endsWith('.md') ? filename : `${filename}.md`;
   const tags = (entry.tags || []).join(', ');
   const comment = entry.comment || '';
@@ -123,7 +101,6 @@ async function updateMetadataFile(entry, targetDir, filename) {
   } else if (entry.type === 'note') {
     bodyContent = entry.text || '';
   } else {
-    // Binary file metadata
     bodyContent = `Metadata for shared file: ${filename}`;
   }
 
@@ -150,21 +127,14 @@ async function updateMetadataFile(entry, targetDir, filename) {
 }
 
 function typeToFolder(type) {
-  const map = {
-    url:    'links',
-    note:   'notes',
-    images: 'images',
-    docs:   'documents',
-    voice:  'audio'
-  };
+  const map = { url: 'links', note: 'notes', images: 'images', docs: 'documents', voice: 'audio' };
   return map[type] || 'other';
 }
 
 function buildFilename(entry, datePrefix) {
-  if (entry.filename) return entry.filename;
-
+  if (entry.filename && !entry.filename.endsWith('.txt')) return entry.filename;
   const dateStr = entry.createdAt.replace(/[:.]/g, '-').slice(0, 19);
-  const ext = entry.type === 'url' ? '.md' : (entry.type === 'note' ? '.md' : '.bin');
+  const ext = (entry.type === 'url' || entry.type === 'note') ? '.md' : '.bin';
   return `${dateStr}_${entry.id.slice(0, 8)}${ext}`;
 }
 
@@ -178,32 +148,26 @@ async function verifyPermission(handle, mode = 'readwrite') {
 const IDB_HANDLE_KEY = 'droptoknowledge-dir-handle';
 
 async function persistHandle(handle) {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open('droptoknowledge-handles', 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
-    req.onsuccess = () => {
-      const db = req.result;
-      const tx = db.transaction('handles', 'readwrite');
-      tx.objectStore('handles').put(handle, IDB_HANDLE_KEY);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    };
-    req.onerror = () => reject(req.error);
-  });
+  const db = await openHandlesDb();
+  const tx = db.transaction('handles', 'readwrite');
+  tx.objectStore('handles').put(handle, IDB_HANDLE_KEY);
 }
 
 async function getHandleFromIdb() {
+  const db = await openHandlesDb();
+  return new Promise((resolve) => {
+    const tx = db.transaction('handles', 'readonly');
+    const req = tx.objectStore('handles').get(IDB_HANDLE_KEY);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+
+function openHandlesDb() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open('droptoknowledge-handles', 1);
     req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
-    req.onsuccess = () => {
-      const db = req.result;
-      const tx = db.transaction('handles', 'readonly');
-      const store = tx.objectStore('handles');
-      const get = store.get(IDB_HANDLE_KEY);
-      get.onsuccess = () => resolve(get.result || null);
-      get.onerror = () => resolve(null);
-    };
-    req.onerror = () => resolve(null);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
   });
 }
