@@ -10,10 +10,9 @@ import {
 
 import {
   isSupported as isLocalSupported,
-  chooseDirectory, restoreDirectory, getDirectoryName, saveEntryDirectly, updateMetadataFile
+  chooseDirectory, restoreDirectory, getDirectoryName, saveEntryDirectly
 } from './storage-local.js';
 
-import { OneDrive, GoogleDrive, Dropbox } from './storage-cloud.js';
 import { showToast, updateCounts, renderItems, renderItemDetail } from './ui.js';
 
 // --- App state ----------------------------------------------------------------
@@ -27,14 +26,6 @@ const state = {
     organizeByType:  true,
     datePrefix:      true
   }
-};
-
-// --- Cloud adapters map -------------------------------------------------------
-
-const CLOUD_ADAPTERS = {
-  onedrive: OneDrive,
-  gdrive:   GoogleDrive,
-  dropbox:  Dropbox
 };
 
 // --- DOM refs -----------------------------------------------------------------
@@ -70,11 +61,9 @@ async function init() {
   }
 
   // Restore directory name display
-  if (state.settings.storageMode === 'local') {
-    const name = await getDirectoryName();
-    if (name) {
-      $('folder-path').textContent = `\u{1F4C2} ${name}`;
-    }
+  const name = await getDirectoryName();
+  if (name) {
+    $('folder-path').textContent = `\u{1F4C2} ${name}`;
   }
 }
 
@@ -82,7 +71,6 @@ async function init() {
 
 async function loadSettings() {
   const saved = await getAllSettings();
-  if (saved.storageMode)    state.settings.storageMode    = saved.storageMode;
   if (saved.organizeByType !== undefined) state.settings.organizeByType = saved.organizeByType;
   if (saved.datePrefix     !== undefined) state.settings.datePrefix     = saved.datePrefix;
 }
@@ -210,22 +198,12 @@ function setupSortBar() {
 function openSettingsModal() {
   const modal = $('settings-modal');
   modal.classList.remove('hidden');
-  syncSettingsUI();
 }
 
 function setupSettingsModal() {
   // Close handlers
   $('settings-close').addEventListener('click', () => $('settings-modal').classList.add('hidden'));
   $('settings-modal').querySelector('.modal-backdrop').addEventListener('click', () => $('settings-modal').classList.add('hidden'));
-
-  // Storage mode radio
-  $$('input[name="storage-mode"]').forEach(radio => {
-    radio.addEventListener('change', async () => {
-      const val = radio.value;
-      await saveSetting('storageMode', val);
-      syncSettingsUI();
-    });
-  });
 
   // Local folder picker
   $('choose-directory').addEventListener('click', async () => {
@@ -242,72 +220,10 @@ function setupSettingsModal() {
     }
   });
 
-  // Cloud connect
-  $('cloud-connect-btn')?.addEventListener('click', async () => {
-    const mode    = state.settings.storageMode;
-    const adapter = CLOUD_ADAPTERS[mode];
-    if (!adapter) return;
-    try {
-      await adapter.connect();
-      const info = await adapter.getUserInfo();
-      if (info) {
-        await setSetting(`${mode}_user`, info);
-        syncSettingsUI();
-        showToast(`Connected to ${adapter.name}`, 'success');
-      }
-    } catch (err) {
-      showToast(`Connection failed: ${err.message}`, 'error');
-    }
-  });
-
-  // Cloud disconnect
-  $('cloud-disconnect-btn')?.addEventListener('click', async () => {
-    const mode    = state.settings.storageMode;
-    const adapter = CLOUD_ADAPTERS[mode];
-    if (!adapter) return;
-    await adapter.disconnect();
-    syncSettingsUI();
-    showToast('Disconnected', 'info');
-  });
-
   // Show Android limitation notice if File System Access API is unavailable
   if (!isLocalSupported()) {
     $('local-unsupported-notice')?.classList.remove('hidden');
     $('choose-directory')?.setAttribute('disabled', 'true');
-  }
-}
-
-async function syncSettingsUI() {
-  const s = state.settings;
-
-  // Radio
-  const radioEl = document.querySelector(`input[name="storage-mode"][value="${s.storageMode}"]`);
-  if (radioEl) radioEl.checked = true;
-
-  // Show/hide sections
-  const isLocal = s.storageMode === 'local';
-  $('local-folder-section')?.classList.toggle('hidden', !isLocal);
-  $('cloud-section')?.classList.toggle('hidden', isLocal);
-
-  // Cloud section text
-  if (!isLocal && $('cloud-section')) {
-    const adapter = CLOUD_ADAPTERS[s.storageMode];
-    if (adapter) {
-      const connected = await adapter.isConnected();
-      $('cloud-connect-btn')?.parentElement.classList.toggle('hidden', connected);
-      $('cloud-connected-info')?.classList.toggle('hidden', !connected);
-      const stubText = $('cloud-stub-text');
-      if (stubText) {
-        stubText.textContent = connected
-          ? `Connected to ${adapter.name}`
-          : `Connect your ${adapter.name} account to sync`;
-      }
-      if (connected) {
-        const info = await adapter.getUserInfo();
-        const emailEl = $('cloud-user-email');
-        if (emailEl) emailEl.textContent = info?.email || '\u2014';
-      }
-    }
   }
 }
 
@@ -345,15 +261,13 @@ async function openItemDetail(entry) {
     await updateEntry(entry.id, { comment, tags });
 
     // Sync the updated metadata back to the file system
-    if (state.settings.storageMode === 'local') {
-      try {
-        const name = await getDirectoryName();
-        if (name) {
-          await saveEntryDirectly(full); // This now handles updating the md file correctly
-        }
-      } catch (e) {
-        console.error('Failed to update file on disk:', e);
+    try {
+      const name = await getDirectoryName();
+      if (name) {
+        await saveEntryDirectly(full);
       }
+    } catch (e) {
+      console.error('Failed to update file on disk:', e);
     }
 
     showToast('Notes saved', 'success');
@@ -374,7 +288,6 @@ function closeItemModal() {
 function setupServiceWorkerMessages() {
   navigator.serviceWorker?.addEventListener('message', async event => {
     if (event.data?.type === 'NEW_SHARED_ITEMS') {
-      // Clear all entries first to prevent duplication after shared redirect
       await clearAllEntries();
 
       if (event.data.entries) {

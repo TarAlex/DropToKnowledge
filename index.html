@@ -125,70 +125,17 @@
       </div>
 
       <div class="modal-body">
-        <!-- Storage -->
-        <section class="settings-section">
-          <h3>Storage destination</h3>
-
-          <label class="radio-option">
-            <input type="radio" name="storage-mode" value="local" id="mode-local" checked />
-            <span class="radio-label">
-              <span class="radio-title">📂 Local folder</span>
-              <span class="radio-desc">Save files to a folder on your device</span>
-            </span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="storage-mode" value="onedrive" id="mode-onedrive" />
-            <span class="radio-label">
-              <span class="radio-title">☁️ OneDrive</span>
-              <span class="radio-desc">Sync to Microsoft OneDrive</span>
-            </span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="storage-mode" value="gdrive" id="mode-gdrive" />
-            <span class="radio-label">
-              <span class="radio-title">🗂️ Google Drive</span>
-              <span class="radio-desc">Sync to Google Drive</span>
-            </span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="storage-mode" value="dropbox" id="mode-dropbox" />
-            <span class="radio-label">
-              <span class="radio-title">📦 Dropbox</span>
-              <span class="radio-desc">Sync to Dropbox</span>
-            </span>
-          </label>
-        </section>
-
         <!-- Local folder -->
         <section class="settings-section" id="local-folder-section">
-          <h3>Local folder</h3>
+          <h3>Storage folder</h3>
           <div class="info-banner hidden" id="local-unsupported-notice">
-            ℹ️ Local folder sync is not available on Android. Choose cloud storage above.
+            ℹ️ Local folder sync requires a modern browser with File System Access API support.
           </div>
           <div class="folder-info" id="folder-info">
             <span id="folder-path">No folder selected</span>
           </div>
           <button class="btn btn-primary" id="choose-directory">Choose folder…</button>
         </section>
-
-        <!-- Cloud account -->
-        <section class="settings-section hidden" id="cloud-section">
-          <h3>Cloud account</h3>
-          <div class="cloud-stub">
-            <p id="cloud-stub-text">Connect your account to sync</p>
-            <div id="cloud-connect-btn-wrap">
-              <button class="btn btn-primary btn-sm" id="cloud-connect-btn">Connect…</button>
-            </div>
-            <div class="hidden" id="cloud-connected-info">
-              <div class="connected-user">
-                <span>Signed in as</span>
-                <span class="connected-email" id="cloud-user-email">—</span>
-              </div>
-              <button class="btn btn-outline btn-sm" id="cloud-disconnect-btn">Disconnect</button>
-            </div>
-          </div>
-        </section>
-
       </div>
     </div>
   </div>
@@ -212,7 +159,6 @@
   <!-- Scripts -->
   <script type="module" src="./js/db.js"></script>
   <script type="module" src="./js/storage-local.js"></script>
-  <script type="module" src="./js/storage-cloud.js"></script>
   <script type="module" src="./js/ui.js"></script>
   <script type="module" src="./js/app.js"></script>
   <script>
