@@ -1,14 +1,14 @@
 # 📁 DropToKnowledge — Android TWA + PWA
 
-> Your single inbox for everything shared from Android — links, notes, documents, images, audio — saved automatically to a local folder or cloud storage.
+> Your single inbox for everything shared from Android — links, notes, documents, images, audio — saved automatically to a local folder on your device.
 
 ## Features
 
 - **Web Share Target** — appears in Android's share menu for any app
 - **Accepts everything** — URLs, text/notes, PDF, DOCX, PPTX, images, audio, video
 - **Offline-first** — Service Worker caches the app shell; shares are stored in IndexedDB even offline
-- **Local folder sync** — File System Access API writes files to a folder you choose, organized by type
-- **Cloud sync** — OneDrive, Google Drive, or Dropbox (OAuth 2.0, configure your Client IDs)
+- **Local folder sync** — File System Access API writes files directly to a folder you choose
+- **Markdown metadata** — All items include a `.md` file with YAML frontmatter for tags, comments, and IDs
 - **TWA wrapper** — Ships as a real Android APK via Bubblewrap; no browser chrome, no install prompt
 - **Dark theme** — OLED-friendly, mobile-optimized UI
 
@@ -25,8 +25,7 @@ DropToKnowledge/
 ├── js/
 │   ├── app.js                # Main controller
 │   ├── db.js                 # IndexedDB helpers
-│   ├── storage-local.js      # File System Access API adapter
-│   └── storage-cloud.js      # OneDrive / GDrive / Dropbox adapters
+│   └── storage-local.js      # File System Access API adapter
 ├── icons/                    # PWA icons
 ├── android-twa/
 │   ├── twa-manifest.json     # Bubblewrap TWA config
