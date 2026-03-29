@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DropToKnowledge Tests</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #1a1a2e; color: #fff; }
+        .test-case { margin-bottom: 20px; padding: 15px; border-radius: 8px; background: #242442; border-left: 5px solid #888; }
+        .pass { border-left-color: #4caf50; }
+        .fail { border-left-color: #f44336; }
+        h2 { margin-top: 0; }
+        pre { background: #000; padding: 10px; border-radius: 4px; overflow-x: auto; color: #a5d6a7; }
+        .status { font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>DropToKnowledge Unit Tests</h1>
+    <div id="test-results"></div>
+
+    <script type="module">
+        import { updateMetadataFile } from './js/storage-local.js';
+
+        const resultsContainer = document.getElementById('test-results');
+
+        function assert(condition, message) {
+            const div = document.createElement('div');
+            div.className = 'test-case ' + (condition ? 'pass' : 'fail');
+            div.innerHTML = `
+                <div class="status">${condition ? '✅ PASS' : '❌ FAIL'}</div>
+                <h2>${message}</h2>
+            `;
+            resultsContainer.appendChild(div);
+            return div;
+        }
+
+        async function testMetadataGeneration() {
+            // Mock entry for a Habr article
+            const entry = {
+                id: 'test-uuid-1234',
+                type: 'url',
+                title: 'Habr: Article Title',
+                text: 'https://habr.com/ru/articles/1011524/',
+                url: 'https://habr.com/ru/articles/1011524/',
+                createdAt: '2024-03-20T16:20:00.000Z',
+                tags: ['development', 'habr'],
+                comment: 'Very interesting article about software architecture.'
+            };
+
+            // Mock FileSystemWritableFileStream
+            let capturedContent = '';
+            const mockWritable = {
+                write: async (data) => { capturedContent += data; },
+                close: async () => {}
+            };
+
+            // Mock FileSystemDirectoryHandle
+            const mockDir = {
+                getFileHandle: async () => ({
+                    createWritable: async () => mockWritable
+                })
+            };
+
+            try {
+                await updateMetadataFile(entry, mockDir, 'test.md');
+
+                const expectedParts = [
+                    '---',
+                    'title: "Habr: Article Title"',
+                    'type: url',
+                    'id: test-uuid-1234',
+                    'saved: 2024-03-20T16:20:00.000Z',
+                    'tags: [development, habr]',
+                    '---',
+                    '[https://habr.com/ru/articles/1011524/](https://habr.com/ru/articles/1011524/)',
+                    '## Notes',
+                    'Very interesting article about software architecture.'
+                ];
+
+                const allFound = expectedParts.every(part => capturedContent.includes(part));
+                const testDiv = assert(allFound, 'Markdown content generation for Habr link');
+
+                const pre = document.createElement('pre');
+                pre.textContent = capturedContent;
+                testDiv.appendChild(document.createTextNode('Generated File Content:'));
+                testDiv.appendChild(pre);
+
+            } catch (e) {
+                assert(false, 'Metadata generation threw error: ' + e.message);
+            }
+        }
+
+        // Run tests
+        testMetadataGeneration();
+    </script>
+</body>
+</html>
